@@ -9,6 +9,7 @@ time across all sites.
 
 import pandas as pd
 import numpy as np
+from functools import reduce
 
 def read_variable_from_csv(filename):
     """Reads a named variable from a CSV file, and returns a
@@ -87,11 +88,19 @@ def data_normalise(data):
 
 
 def data_above_threshold(data, site_id, threshold):
-    """compare each element in data to a threshold value
+    """count number of entries in data above a threshold
 
     :param data: pandas dataframe
     :param site_id: string id of column in data frame
     :param threshold: float threshold for rainfall
-    :returns: list of booleans, true if value exceeded threshold
+    :returns: count of values exceeding threshold
     """
-    return list(map(lambda x: x > threshold, data[site_id]))
+
+    def count_above_threshold(a, b):
+        if b:
+            return a + 1
+        else:
+            return a
+
+    above_threshold = map(lambda x: x > threshold, data[site_id])
+    return reduce(count_above_threshold, above_threshold, 0)
