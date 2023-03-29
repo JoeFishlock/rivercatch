@@ -84,3 +84,14 @@ def data_normalise(data):
     """normalise each column in a dataframe by the maximum value in that column"""
     column_maximums = np.array(np.max(data, axis=0))
     return data / column_maximums[np.newaxis, :]
+
+
+def data_above_threshold(data, site_id, threshold):
+    """compare each element in data to a threshold value
+
+    :param data: pandas dataframe
+    :param site_id: string id of column in data frame
+    :param threshold: float threshold for rainfall
+    :returns: list of booleans, true if value exceeded threshold
+    """
+    return list(map(lambda x: x > threshold, data[site_id]))
