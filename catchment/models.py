@@ -8,7 +8,7 @@ time across all sites.
 """
 
 import pandas as pd
-
+import numpy as np
 
 def read_variable_from_csv(filename):
     """Reads a named variable from a CSV file, and returns a
@@ -78,3 +78,9 @@ def daily_min(data):
     :returns: daily min dataframe
     """
     return data.groupby(data.index.date).min()
+
+
+def data_normalise(data):
+    """normalise each column in a dataframe by the maximum value in that column"""
+    column_maximums = np.array(np.max(data, axis=0))
+    return data / column_maximums[np.newaxis, :]
