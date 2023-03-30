@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 from functools import reduce
 
+
 def read_variable_from_csv(filename):
     """Reads a named variable from a CSV file, and returns a
     pandas dataframe containing that variable. The CSV file must contain
@@ -104,3 +105,63 @@ def data_above_threshold(data, site_id, threshold):
 
     above_threshold = map(lambda x: x > threshold, data[site_id])
     return reduce(count_above_threshold, above_threshold, 0)
+
+
+class Location:
+    def __init__(self, name):
+        self.name = name
+
+
+class Site(Location):
+    version = 0.1
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.measurements = {}
+
+    def add_measurement(self, measurement_id, data):
+        if measurement_id in self.measurements.keys():
+            self.measurements[measurement_id] = \
+                pd.concat([self.measurements[measurement_id], data])
+        else:
+            self.measurements[measurement_id] = data
+            self.measurements[measurement_id].name = measurement_id
+
+    @classmethod
+    def get_version(cls):
+        return "version " + str(cls.version)
+
+    @staticmethod
+    def create_sample_site():
+        return Site("sample")
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def last_measurements(self):
+        return pd.concat(
+            [self.measurements[key][-1:] for key in self.measurements.keys()], axis=1
+        ).sort_index()
+
+
+class MeasurementSeries:
+    def __init__(self, series, name, units):
+        self.series = series
+        self.name = name
+        self.units = units
+        self.series.name = self.name
+
+    def add_measurement(self, data):
+        self.series = pd.concat([self.series, data])
+        self.series.name = self.name
+
+    def __str__(self):
+        if self.units:
+            return f"{self.name} ({self.units})"
+        else:
+            return self.name
+
+
+
+
