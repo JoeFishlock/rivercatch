@@ -87,6 +87,13 @@ def data_normalise(data):
     max = np.array(np.max(data, axis=0))
     return data / max[np.newaxis, :]
 
+def no_rain_total(data, loc):
+    """Calculate the number of days which had zero rain"""
+
+    column = data.iloc[:, [loc]]
+    count = column[column == 0].count()
+    return count
+
 
 class MeasurementSeries:
     def __init__(self, series, name, units):
