@@ -12,6 +12,7 @@ import numpy as np
 import geopandas as gpd
 from geopandas.tools import sjoin
 
+
 def read_variable_from_csv(filename):
     """Reads a named variable from a CSV file, and returns a
     pandas dataframe containing that variable. The CSV file must contain
@@ -37,6 +38,7 @@ def read_variable_from_csv(filename):
 
     return newdataset
 
+
 def daily_total(data):
     """Calculate the daily total of a 2D data array.
 
@@ -45,6 +47,7 @@ def daily_total(data):
     :returns: A 2D Pandas data frame with total values of the measurements for each day.
     """
     return data.groupby(data.index.date).sum()
+
 
 def daily_mean(data):
     """Calculate the daily mean of a 2D data array.
@@ -74,6 +77,17 @@ def daily_min(data):
     :returns: A 2D Pandas data frame with minimum values of the measurements for each day.
     """
     return data.groupby(data.index.date).min()
+
+
+def calculate_std(data):
+    """Calculate the standard deviation for each measurement sites
+
+    :param data: A 2D pandas data frame with measurement data.
+                Index is date times and columns are measurement sites
+    "returns: standard deviation of each column
+    """
+    return np.std(data, axis=0)
+
 
 def data_normalise(data):
     """Calculate the normalised values for each column in a given 2D array.
