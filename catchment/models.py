@@ -10,7 +10,11 @@ time across all sites.
 import pandas as pd
 import numpy as np
 import geopandas as gpd
-from geopandas.tools import sjoin
+
+def find_max_day(site_name):
+    max_datetime_data = data[data[site_name] == data[site_name].max()]
+    return max_datetime_data.iloc[0]
+
 
 def read_variable_from_csv(filename):
     """Reads a named variable from a CSV file, and returns a
@@ -115,17 +119,16 @@ class Location:
 
 
 class Site(Location):
-    def __init__(self, name, longitude=None, latitude=None):
+    def __init__(self, name, longitude = None, latitude = None):
         super().__init__(name)
         self.measurements = {}
         if longitude and latitude:
             self.location = gpd.GeoDataFrame(
-                            geometry=gpd.points_from_xy([longitude], [latitude], crs='EPSG:4326')
+                            geometry = gpd.points_from_xy([longitude], [latitude], crs='EPSG:4326')
                             )
 
         else:
             self.location = gpd.GeoDataFrame()
-
     def add_measurement(self, measurement_id, data, units=None):
         if measurement_id in self.measurements.keys():
             self.measurements[measurement_id].add_measurement(data)

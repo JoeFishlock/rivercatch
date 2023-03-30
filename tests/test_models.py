@@ -7,17 +7,68 @@ import pytest
 import numpy.testing as npt
 import geopandas as gpd
 from shapely.geometry import Point
+...
 
-
+# Add a function to return the highest rainfall
+@pytest.mark.parametrize(
+    "test_data, test_index, test_column, expected_data, expected_index, expected_column",
+    [
+        (
+            [1,2,3],
+            [datetime('2000','1','1'),
+             datetime('2000','1','2'),
+             datetime('2000','1','3')],
+            ['max'],
+            [3],
+            [datetime('2000','1','3')],
+            ['max']
+        ),
+    ])
+def test_find_max_day(site_name):
+    max_datetime_data = data[data[site_name] == data[site_name].max()]
+    pdt.assert_frame_equal(find_max_day(pd.DataFrame(data=test_data, index=test_index, columns=test_columns)),
+                           pd.DataFrame(data=expected_data, index=expected_index, columns=expected_columns))
 def test_create_site_with_position():
     """Check a site is created correctly given a name."""
     from catchment.models import Site
     name = 'PL23'
     longitude = 5
-    latitude = 5
-    position = gpd.GeoDataFrame(geometry=[Point((longitude, latitude))], crs='EPSG:4326')
-    p = Site(name=name, longitude=longitude, latitude=latitude)
+    latitude = 7
+    position = gpd.GeoDataFrame(geometry=[Point((longitude,latitude))],crs='EPSG:4326')
+    p = Site(name = name, longitude = longitude, latitude = latitude)
     assert p.location.geom_equals(position)[0]
+def test_create_catchment_with_shapefile():
+    """Check a catchment is created correctly given a simple shapefile."""
+    from catchment.models import Catchment
+    name = 'Pang'
+    shapefile = 'data/simple_shapefile/simple.shp'
+    position = gpd.GeoDataFrame.read_file(shapefile)
+    catchment = Catchment(name=name,shapefile=shapefile)
+    assert catchment.area.geom_equals(position)
+
+def test_site_in_catchment_added_correctly():
+    """Check sites within catchment are being added correctly."""
+    from catchment.models import Catchment, Site
+    shapefile = 'data/simple_shapefile/simple.shp'
+    catchment = Catchment(name='Pang',shapefile=shapefile)
+    longitude = 5
+    latitude = 5
+    PL23 = Site("PL23", longitude=longitude, latitude=latitude)
+    catchment.add_site(PL23)
+    assert catchment.sites is not None
+    assert len(catchment.sites) == 1
+
+def test_site_outside_catchment_excluded_correctly():
+    """Check sites outside catchment are being excluded."""
+    from catchment.models import Catchment, Site
+    shapefile = 'data/simple_shapefile/simple.shp'
+    catchment = Catchment(name='Pang',shapefile=shapefile)
+    longitude = -5
+    latitude = -5
+    PL23 = Site("PL23", longitude=longitude, latitude=latitude)
+    catchment.add_site(PL23)
+    assert catchment.sites is None
+
 
 
 @pytest.mark.parametrize(
@@ -51,7 +102,6 @@ def test_daily_min_python_list():
 
     with pytest.raises(AttributeError):
         error_expected = daily_min([[3, 4, 7],[-3, 0, 5]])
-
 
 @pytest.mark.parametrize(
     "test_data, test_index, test_columns, expected_data, expected_index, expected_columns",
@@ -140,7 +190,6 @@ def test_create_site():
     p = Site(name=name)
     assert p.name == name
 
-
 def test_create_catchment():
     """Check a catchment is created correctly given a name."""
     from catchment.models import Catchment
@@ -148,20 +197,17 @@ def test_create_catchment():
     catchment = Catchment(name=name)
     assert catchment.name == name
 
-
 def test_catchment_is_location():
     """Check if a catchment is a location."""
     from catchment.models import Catchment, Location
     catchment = Catchment("Spain")
     assert isinstance(catchment, Location)
 
-
 def test_site_is_location():
     """Check if a site is a location."""
     from catchment.models import Site, Location
     PL23 = Site("PL23")
     assert isinstance(PL23, Location)
-
 
 def test_sites_added_correctly():
     """Check sites are being added correctly by a catchment. """
@@ -172,7 +218,6 @@ def test_sites_added_correctly():
     assert catchment.sites is not None
     assert len(catchment.sites) == 1
 
-
 def test_no_duplicate_sites():
     """Check adding the same site to the same catchment twice does not result in duplicates. """
     from catchment.models import Catchment, Site
@@ -181,4 +226,3 @@ def test_no_duplicate_sites():
     catchment.add_site(PL23)
     catchment.add_site(PL23)
     assert len(catchment.sites) == 1
-    
