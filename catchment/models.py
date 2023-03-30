@@ -9,8 +9,6 @@ time across all sites.
 
 import pandas as pd
 import numpy as np
-from functools import reduce
-
 
 def read_variable_from_csv(filename):
     """Reads a named variable from a CSV file, and returns a
@@ -22,127 +20,70 @@ def read_variable_from_csv(filename):
     :return: 2D array of given variable. Index will be dates,
              Columns will be the individual sites
     """
-    dataset = pd.read_csv(filename, usecols=["Date", "Site", "Rainfall (mm)"])
+    dataset = pd.read_csv(filename, usecols=['Date', 'Site', 'Rainfall (mm)'])
 
-    dataset = dataset.rename({"Date": "OldDate"}, axis="columns")
-    dataset["Date"] = [pd.to_datetime(x, dayfirst=True) for x in dataset["OldDate"]]
-    dataset = dataset.drop("OldDate", axis="columns")
+    dataset = dataset.rename({'Date':'OldDate'}, axis='columns')
+    dataset['Date'] = [pd.to_datetime(x,dayfirst=True) for x in dataset['OldDate']]
+    dataset = dataset.drop('OldDate', axis='columns')
 
-    newdataset = pd.DataFrame(index=dataset["Date"].unique())
+    newdataset = pd.DataFrame(index=dataset['Date'].unique())
 
-    for site in dataset["Site"].unique():
-        newdataset[site] = dataset[dataset["Site"] == site].set_index("Date")[
-            "Rainfall (mm)"
-        ]
+    for site in dataset['Site'].unique():
+        newdataset[site] = dataset[dataset['Site'] == site].set_index('Date')["Rainfall (mm)"]
 
     newdataset = newdataset.sort_index()
 
     return newdataset
 
-
 def daily_total(data):
     """Calculate the daily total of a 2D data array.
 
-    NOTE: index must be np.datetime64 compatible format.
-
-    :param data: pandas dataframe
-    :returns: daily total in pandas dataframe
+    :param data: A 2D Pandas data frame with measurement data.
+                 Index must be np.datetime64 compatible format. Columns are measurement sites.
+    :returns: A 2D Pandas data frame with total values of the measurements for each day.
     """
     return data.groupby(data.index.date).sum()
-
 
 def daily_mean(data):
     """Calculate the daily mean of a 2D data array.
 
-    NOTE: index must be np.datetime64 compatible format.
-
-    :param data: pandas dataframe
-    :returns: daily mean in pandas dataframe
+    :param data: A 2D Pandas data frame with measurement data.
+                 Index must be np.datetime64 compatible format. Columns are measurement sites.
+    :returns: A 2D Pandas data frame with mean values of the measurements for each day.
     """
     return data.groupby(data.index.date).mean()
 
 
 def daily_max(data):
-    """Calculate the daily max of a 2D data array.
+    """Calculate the daily maximum of a 2D data array.
 
-    NOTE: index must be np.datetime64 compatible format.
-    :param data: pandas dataframe
-    :returns: daily max dataframe
+    :param data: A 2D Pandas data frame with measurement data.
+                 Index must be np.datetime64 compatible format. Columns are measurement sites.
+    :returns: A 2D Pandas data frame with maximum values of the measurements for each day.
     """
     return data.groupby(data.index.date).max()
 
 
 def daily_min(data):
-    """Calculate the daily min of a 2D data array.
+    """Calculate the daily minimum of a 2D data array.
 
-    NOTE: index must be np.datetime64 compatible format.
-    :param data: pandas dataframe
-    :returns: daily min dataframe
+    :param data: A 2D Pandas data frame with measurement data.
+                 Index must be np.datetime64 compatible format. Columns are measurement sites.
+    :returns: A 2D Pandas data frame with minimum values of the measurements for each day.
     """
     return data.groupby(data.index.date).min()
 
-
 def data_normalise(data):
-    """normalise each column in a dataframe by the maximum value in that column"""
-    column_maximums = np.array(np.max(data, axis=0))
-    return data / column_maximums[np.newaxis, :]
+    """Calculate the normalised values for each column in a given 2D array.
+    Range will be 0-1. But negative values are not screened out. And NaNs
+    in numpy arrays are not screened out either.
 
-
-def data_above_threshold(data, site_id, threshold):
-    """count number of entries in data above a threshold
-
-    :param data: pandas dataframe
-    :param site_id: string id of column in data frame
-    :param threshold: float threshold for rainfall
-    :returns: count of values exceeding threshold
+    :param data: A 2D data array (numpy or pandas) with measurement data.
+    :returns: A 2D data array, of the same type as the input data array
+              with measurements normalised.
     """
-
-    def count_above_threshold(a, b):
-        if b:
-            return a + 1
-        else:
-            return a
-
-    above_threshold = map(lambda x: x > threshold, data[site_id])
-    return reduce(count_above_threshold, above_threshold, 0)
-
-
-class Location:
-    def __init__(self, name):
-        self.name = name
-
-
-class Site(Location):
-    version = 0.1
-
-    def __init__(self, name):
-        super().__init__(name)
-        self.measurements = {}
-
-    def add_measurement(self, measurement_id, data):
-        if measurement_id in self.measurements.keys():
-            self.measurements[measurement_id] = \
-                pd.concat([self.measurements[measurement_id], data])
-        else:
-            self.measurements[measurement_id] = data
-            self.measurements[measurement_id].name = measurement_id
-
-    @classmethod
-    def get_version(cls):
-        return "version " + str(cls.version)
-
-    @staticmethod
-    def create_sample_site():
-        return Site("sample")
-
-    def __str__(self):
-        return self.name
-
-    @property
-    def last_measurements(self):
-        return pd.concat(
-            [self.measurements[key][-1:] for key in self.measurements.keys()], axis=1
-        ).sort_index()
+    max = np.array(np.max(data, axis=0))
+    return data / max[np.newaxis, :]
 
 
 class MeasurementSeries:
@@ -163,5 +104,44 @@ class MeasurementSeries:
             return self.name
 
 
+class Location:
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return self.name
 
 
+class Site(Location):
+    def __init__(self, name):
+        super().__init__(name)
+        self.measurements = {}
+
+    def add_measurement(self, measurement_id, data, units=None):
+        if measurement_id in self.measurements.keys():
+            self.measurements[measurement_id].add_measurement(data)
+
+        else:
+            self.measurements[measurement_id] = MeasurementSeries(data, measurement_id, units)
+
+    @property
+    def last_measurements(self):
+        return pd.concat(
+            [self.measurements[key].series[-1:] for key in self.measurements.keys()],
+            axis=1).sort_index()
+
+class Catchment(Location):
+    """A catchment area in the study."""
+    def __init__(self, name):
+        super().__init__(name)
+        self.sites = {}
+
+
+    def add_site(self, new_site):
+        # Basic check to see if the site has already been added to the catchment area
+        for site in self.sites:
+            if site == new_site:
+                print(f'{new_site} has already been added to site list')
+                return
+
+        self.sites[new_site.name] = Site(new_site)
