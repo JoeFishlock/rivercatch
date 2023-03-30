@@ -181,4 +181,11 @@ def test_no_duplicate_sites():
     catchment.add_site(PL23)
     catchment.add_site(PL23)
     assert len(catchment.sites) == 1
-    
+
+def test_histogram():
+    """create histograms with bins"""
+    from catchment.models import histogram
+    df = pd.DataFrame({
+    'Rainfall (mm)': dataset['Rainfall (mm)']})
+    hist = df.hist(bins=10)
+    assert

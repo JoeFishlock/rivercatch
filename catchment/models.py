@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd
 from geopandas.tools import sjoin
+import matplotlib.pyplot as plt
 
 
 def read_variable_from_csv(filename):
@@ -175,3 +176,9 @@ class Catchment(Location):
                 return
 
         self.sites[new_site.name] = Site(new_site)
+
+def histogram(data):
+    """create histograms with bins"""
+    df = pd.DataFrame({
+    'Rainfall (mm)': dataset['Rainfall (mm)']})
+    hist = df.hist(bins=10)
